@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Facturas</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .main-container {
+            display: flex;
+            width: 100%;
+            max-width: 1400px;
+            gap: 20px;
+        }
+
+        .form-container {
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            width: 40%;
+            min-width: 300px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #007BFF;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        h1 i {
+            margin-right: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            color: #555;
+            margin-bottom: 5px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+            background-color: #f9f9f9;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            border-color: #007BFF;
+            outline: none;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 10px;
+            background-color: #007BFF;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .btn-submit:hover {
+            background-color: #0056b3;
+        }
+
+        .btn-submit i {
+            margin-right: 8px;
+        }
+
+        .outer-container {
+            margin-top: 10px;
+            width: 60%;
+            max-width: 1700px;
+            overflow-x: auto;
+        }
+
+        .table-container {
+            width: 100%;
+            height: 540px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        table {
+            width: 100%;
+            min-width: 1200px;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            text-align: start;
+            width: 100px;
+            min-width: 100px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            position: relative;
+            padding: 6px;
+        }
+
+        th {
+            background-color: #f4f4f4;
+            position: sticky;
+            top: 0;
+            font-size: 12px;
+            color: #202020;
+            z-index: 1;
+        }
+
+        td {
+            font-size: 12px;
+            color: #555;
+        }
+
+        tr:hover td {
+            background-color: #f0f0f0;
+        }
+
+        .resizer {
+            position: absolute;
+            top: 0;
+            right: -2px;
+            width: 5px;
+            height: 100%;
+            cursor: ew-resize;
+            background: transparent;
+        }
+
+        .resizer:hover {
+            background: #666;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 5px;
+        }
+
+        .action-btn.edit {
+            color: #007BFF;
+        }
+
+        .action-btn.delete {
+            color: #dc3545;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .spinner-container {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .lds-dual-ring {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            margin-right: 15px;
+        }
+
+        .lds-dual-ring:after {
+            content: " ";
+            display: block;
+            width: 32px;
+            height: 32px;
+            margin: 4px;
+            border-radius: 50%;
+            border: 4px solid #007BFF;
+            border-color: #007BFF transparent #007BFF transparent;
+            animation: lds-dual-ring 1.2s linear infinite;
+        }
+
+        @keyframes lds-dual-ring {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 16px;
+            color: #333;
+        }
+
+        .messages-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+        }
+
+        .message {
+            padding: 10px 20px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .message i {
+            margin-right: 10px;
+        }
+
+        .close-btn {
+            margin-left: 10px;
+            background: none;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            color: inherit;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="form-container">
+            <h1><i class="fas fa-file-invoice"></i> Gestión de Facturas</h1>
+            <form id="facturaForm">
+                <div class="form-group">
+                    <label for="fechaIngreso">Fecha Ingreso</label>
+                    <input type="date" id="fechaIngreso" required>
+                </div>
+                <div class="form-group">
+                    <label for="factura">Factura</label>
+                    <input type="text" id="factura" placeholder="Número de factura" required>
+                </div>
+                <div class="form-group">
+                    <label for="fechaFactura">Fecha Factura</label>
+                    <input type="date" id="fechaFactura" required>
+                </div>
+                <div class="form-group">
+                    <label for="montoFactura">Monto Factura</label>
+                    <input type="number" id="montoFactura" placeholder="Monto" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="oc">OC</label>
+                    <input type="text" id="oc" placeholder="Orden de compra" required>
+                </div>
+                <div class="form-group">
+                    <label for="fechaOc">Fecha OC</label>
+                    <input type="date" id="fechaOc" required>
+                </div>
+                <div class="form-group">
+                    <label for="proveedor">Proveedor</label>
+                    <input type="text" id="proveedor" placeholder="Nombre del proveedor" required>
+                </div>
+                <div class="form-group">
+                    <label for="acta">Acta</label>
+                    <input type="text" id="acta" placeholder="Número de acta" required>
+                </div>
+                <div class="form-group">
+                    <label for="fechaSalida">Fecha Salida</label>
+                    <input type="date" id="fechaSalida" required>
+                </div>
+                <div class="form-group">
+                    <label for="salida">Salida</label>
+                    <input type="text" id="salida" placeholder="Detalles de salida" required>
+                </div>
+                <button type="submit" class="btn-submit"><i class="fas fa-save"></i> Agregar</button>
+            </form>
+        </div>
+
+        <div class="outer-container">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fecha Ingreso<span class="resizer"></span></th>
+                            <th>Factura<span class="resizer"></span></th>
+                            <th>Fecha Factura<span class="resizer"></span></th>
+                            <th>Monto Factura<span class="resizer"></span></th>
+                            <th>OC<span class="resizer"></span></th>
+                            <th>Fecha OC<span class="resizer"></span></th>
+                            <th>Proveedor<span class="resizer"></span></th>
+                            <th>Acta<span class="resizer"></span></th>
+                            <th>Fecha Salida<span class="resizer"></span></th>
+                            <th>Salida<span class="resizer"></span></th>
+                            <th>Mes Ingreso<span class="resizer"></span></th>
+                            <th>Año Ingreso<span class="resizer"></span></th>
+                            <th>Mes Salida<span class="resizer"></span></th>
+                            <th>Año Salida<span class="resizer"></span></th>
+                            <th>Acciones<span class="resizer"></span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="facturasTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay hidden" id="overlay">
+        <div class="spinner-container">
+            <div class="lds-dual-ring"></div>
+            <div class="loading-text">Procesando...</div>
+        </div>
+    </div>
+
+    <div class="messages-container" id="messagesContainer">
+        <div class="message success hidden" id="messageSuccess">
+            <i class="fas fa-check-circle"></i>
+            <div class="text" id="successText"></div>
+            <button class="close-btn" id="closeMessageSuccess">×</button>
+        </div>
+        <div class="message error hidden" id="messageError">
+            <i class="fas fa-times-circle"></i>
+            <div class="text" id="errorText"></div>
+            <button class="close-btn" id="closeMessageError">×</button>
+        </div>
+    </div>
+
+    <script src="facturas.js"></script>
+</body>
+</html>
