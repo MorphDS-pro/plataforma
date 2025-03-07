@@ -1,0 +1,96 @@
+.file-actions {
+    margin-top: 5px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.btn-download {
+    background-color: #4CAF50;
+    color: white;
+    padding: 6px 15px;
+    border: none;
+    border-radius: 5px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.btn-download i {
+    color: white;
+}
+
+.btn-download:hover {
+    background-color: #45a049;
+}
+
+.btn-download:focus {
+    outline: none;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+}
+
+.btn-import {
+    background-color: #4CAF50;
+    color: white;
+    padding: 6px 15px;
+    border: none;
+    border-radius: 5px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.btn-import i {
+    color: white;
+}
+
+.btn-import:hover {
+    background-color: #45a049;
+}
+
+.btn-import:focus {
+    outline: none;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+}
+
+/* Media Queries para pantallas más pequeñas */
+@media (max-width: 1200px) {
+    .file-actions {
+        gap: 8px;
+        padding: 8px;
+    }
+
+    .btn-download, .btn-import {
+        padding: 5px 12px;
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 768px) {
+    .file-actions {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+
+    .btn-download, .btn-import {
+        padding: 5px 12px;
+        font-size: 12px;
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .file-actions {
+        padding: 5px;
+    }
+
+    .btn-download, .btn-import {
+        padding: 4px 10px;
+        font-size: 11px;
+    }
+}

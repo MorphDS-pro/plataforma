@@ -1,0 +1,151 @@
+.confirmation-container-new.hidden {
+    display: none;
+}
+
+.confirmation-container-new {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.confirmation-dialog-new {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1); 
+    padding: 25px 40px;
+    text-align: center;
+    position: relative;
+    width: 500px;
+}
+
+.icon-container {
+    margin-bottom: 20px;
+}
+
+.warning-icon {
+    color: #f39c12 !important; 
+}
+
+.confirmation-message {
+    font-size: 18px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.confirmation-buttons-new {
+    margin-top: 20px;
+    display: flex;
+    justify-content: space-evenly;
+}
+
+.confirmation-buttons-new button {
+    padding: 6px 20px;
+    font-size: 14px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.btn-confirm-new {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.btn-cancel-new {
+    background-color: #f44336;
+    color: white;
+}
+
+.btn-confirm-new:hover {
+    background-color: #45a049;
+}
+
+.btn-cancel-new:hover {
+    background-color: #e53935;
+}
+
+.close-btn-new {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 20px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #888;
+    transition: color 0.3s ease;
+}
+
+.close-btn-new:hover {
+    color: #333;
+}
+
+/* Media Queries para pantallas más pequeñas */
+@media (max-width: 1200px) {
+    .confirmation-dialog-new {
+        width: 90%;
+        padding: 20px;
+    }
+
+    .confirmation-message {
+        font-size: 16px;
+    }
+
+    .confirmation-buttons-new button {
+        font-size: 12px;
+        padding: 5px 15px;
+    }
+
+    .close-btn-new {
+        font-size: 18px;
+    }
+}
+
+@media (max-width: 768px) {
+    .confirmation-dialog-new {
+        width: 90%;
+        padding: 15px;
+    }
+
+    .confirmation-message {
+        font-size: 14px;
+    }
+
+    .confirmation-buttons-new button {
+        font-size: 12px;
+        padding: 5px 12px;
+    }
+
+    .close-btn-new {
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .confirmation-dialog-new {
+        width: 100%;
+        padding: 12px;
+    }
+
+    .confirmation-message {
+        font-size: 12px;
+    }
+
+    .confirmation-buttons-new button {
+        font-size: 12px;
+        padding: 4px 10px;
+    }
+
+    .close-btn-new {
+        font-size: 14px;
+    }
+}

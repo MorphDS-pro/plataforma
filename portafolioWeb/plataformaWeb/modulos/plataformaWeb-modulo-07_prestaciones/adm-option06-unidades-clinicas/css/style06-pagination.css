@@ -1,0 +1,79 @@
+#pagination {
+    display: flex;
+    justify-content: start;
+    align-items: center;
+    margin: 10px 0;
+}
+
+#pagination button {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    margin: 0 5px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#pagination button:hover {
+    background-color: #2980b9;
+}
+
+#pagination span {
+    font-size: 16px;
+    margin: 0 10px;
+    color: #333;
+}
+
+/* Media Queries para pantallas más pequeñas */
+@media (max-width: 1200px) {
+    #pagination {
+        margin: 15px 0;
+    }
+
+    #pagination button {
+        padding: 6px 12px;
+        font-size: 14px;
+    }
+
+    #pagination span {
+        font-size: 14px;
+        margin: 0 8px;
+    }
+}
+
+@media (max-width: 768px) {
+    #pagination {
+        justify-content: center;
+    }
+
+    #pagination button {
+        padding: 6px 12px;
+        font-size: 14px;
+        margin: 0 4px;
+    }
+
+    #pagination span {
+        font-size: 14px;
+        margin: 0 6px;
+    }
+}
+
+@media (max-width: 480px) {
+    #pagination {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    #pagination button {
+        padding: 6px 12px;
+        font-size: 12px;
+        margin: 5px 0;
+    }
+
+    #pagination span {
+        font-size: 12px;
+        margin: 5px 0;
+    }
+}
