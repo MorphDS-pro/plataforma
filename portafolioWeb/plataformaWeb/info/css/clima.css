@@ -1,0 +1,67 @@
+/* Estilo general de la pestaña */
+#tab1 {
+    padding: 20px;
+    background-color: #f0f8ff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .tab-title {
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  /* Estilo para el contenedor del clima */
+  #clima {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+  }
+  
+  .left-column, .right-column {
+    flex: 1;
+  }
+  
+  .left-column {
+    text-align: center;
+  }
+  
+  .left-column img {
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+    margin-top: 10px;
+  }
+  
+  .right-column {
+    font-size: 16px;
+    color: #555;
+  }
+  
+  .right-column p {
+    margin: 10px 0;
+    line-height: 1.6;
+  }
+  
+  /* Ajuste para pantallas pequeñas */
+  @media (max-width: 768px) {
+    #clima {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    
+    .left-column, .right-column {
+      flex: none;
+      width: 100%;
+    }
+  
+    .left-column img {
+      width: 80px;
+      height: 80px;
+    }
+  }
+  
