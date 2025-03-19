@@ -65,15 +65,21 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 function updateUserIcon(identidad, imgElement) {
-    if (identidad === 'hombre') {
-        imgElement.src = 'img/usuario-Hombre.png';
-        imgElement.alt = 'Hombre';
-    } else if (identidad === 'mujer') {
-        imgElement.src = 'img/usuario-Mujer.png';
-        imgElement.alt = 'Mujer';
-    } else {
-        imgElement.src = 'img/otro.png';
-        imgElement.alt = 'Otro';
+    try {
+        if (identidad === 'hombre') {
+            imgElement.src = './assets/img/usuario-Hombre.png'; // Ruta corregida
+            imgElement.alt = 'Hombre';
+        } else if (identidad === 'mujer') {
+            imgElement.src = './assets/img/usuario-Mujer.png'; // Ruta corregida
+            imgElement.alt = 'Mujer';
+        } else {
+            imgElement.src = './assets/img/otro.png'; // Ruta corregida
+            imgElement.alt = 'Otro';
+        }
+    } catch (error) {
+        console.error("Error al cargar el ícono del usuario:", error);
+        imgElement.src = './assets/img/default.png'; // Imagen predeterminada como fallback (opcional)
+        imgElement.alt = 'Ícono predeterminado';
     }
 }
 
