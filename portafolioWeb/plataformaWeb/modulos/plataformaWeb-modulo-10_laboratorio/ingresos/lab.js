@@ -76,7 +76,7 @@ months.forEach((month, index) => {
     monthSelector.appendChild(option);
 });
 
-for (let year = currentYear - 5; year <= currentYear + 5; year++) {
+for (let year = currentYear - 1; year <= currentYear + 5; year++) {
     const option = document.createElement('option');
     option.value = year;
     option.textContent = year;
@@ -196,10 +196,12 @@ ocInput.addEventListener('blur', () => {
 });
 
 // Guardar datos en Firestore (registro inicial)
+// Guardar datos en Firestore (registro inicial)
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
     overlayRegister.classList.remove('hidden');
 
+    const invoiceNumber = invoiceInput.value.trim();
     const entryDate = new Date();
     const id = await generateId();
     const usuario = document.getElementById('registerUsuario').textContent;
@@ -207,10 +209,27 @@ form.addEventListener('submit', async (e) => {
     const fechaEmisionRaw = document.getElementById('registerIssueDate').value; // yyyy-mm-dd
     const fechaEmision = fechaEmisionRaw ? convertToDDMMYYYY(fechaEmisionRaw) : ''; // Convertir a dd-mm-yyyy
 
+    // Verificar si la factura ya existe en la base de datos
+    const q = query(detallesCollection, orderBy('factura'));
+    const snapshot = await new Promise(resolve => onSnapshot(q, snap => resolve(snap)));
+    const existingInvoice = snapshot.docs.find(doc => doc.data().factura === invoiceNumber);
+
+    if (existingInvoice) {
+        // Mostrar mensaje de advertencia si la factura ya existe
+        overlayRegister.classList.add('hidden');
+        const messageWarning = document.getElementById('messageWarning');
+        const warningText = document.getElementById('warningText');
+        warningText.textContent = `Advertencia: La factura ${invoiceNumber} ya se encuentra ingresada en el sistema. Por favor, revisa el número de factura.`;
+        messageWarning.classList.remove('hidden');
+        setTimeout(() => messageWarning.classList.add('hidden'), 5000); // Ocultar después de 5 segundos
+        return; // Detener la ejecución para no guardar el registro
+    }
+
+    // Si no existe, proceder a guardar el registro
     const data = {
         id: id,
         digitadoPor: usuario,
-        factura: invoiceInput.value,
+        factura: invoiceNumber,
         fechaEmision: fechaEmision, // Guardar como dd-mm-yyyy
         monto: parseInt(montoRaw) || 0,
         oc: ocInput.value,
@@ -237,6 +256,9 @@ form.addEventListener('submit', async (e) => {
     } catch (error) {
         console.error('Error al guardar:', error);
         overlayRegister.classList.add('hidden');
+        successText.textContent = 'Error al guardar el registro';
+        messageSuccess.classList.remove('hidden');
+        setTimeout(() => messageSuccess.classList.add('hidden'), 3000);
     }
 });
 
@@ -480,10 +502,9 @@ btnImport.addEventListener('click', async () => {
             const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
             // La primera fila son los encabezados
-            const headers = jsonData[0].map(header => header.toString().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "")); // Normalizar encabezados (quitar acentos)
-            const rows = jsonData.slice(1); // Filas de datos
+            const headers = jsonData[0].map(header => header.toString().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
+            const rows = jsonData.slice(1);
 
-            // Mapear encabezados a los campos esperados
             const fieldMap = {
                 'id': 'id',
                 'digitadoPor': 'digitadoPor',
@@ -495,18 +516,17 @@ btnImport.addEventListener('click', async () => {
                 'proveedor': 'proveedor',
                 'fechaIngreso': 'fechaIngreso',
                 'mesIngreso': 'mesIngreso',
-                'anoIngreso': 'añoIngreso', // Normalizado
+                'anoIngreso': 'añoIngreso',
                 'acta': 'acta',
                 'fechaSalida': 'fechaSalida',
                 'numeroSalida': 'numeroSalida',
                 'mesSalida': 'mesSalida',
-                'anoSalida': 'añoSalida', // Normalizado
+                'anoSalida': 'añoSalida',
                 'usuario': 'usuario'
             };
 
-            // Procesar cada fila
             for (const row of rows) {
-                if (!row || row.length === 0) continue; // Saltar filas vacías
+                if (!row || row.length === 0) continue;
 
                 const rowData = {};
                 headers.forEach((header, index) => {
@@ -514,9 +534,8 @@ btnImport.addEventListener('click', async () => {
                     const field = Object.keys(fieldMap).find(key => key.toLowerCase() === normalizedHeader);
                     if (field) {
                         let value = row[index] ? row[index] : '';
-                        // Convertir fechas de Excel (números) a formato dd-mm-yyyy
                         if (['fechaEmision', 'fechaOc', 'fechaIngreso', 'fechaSalida'].includes(fieldMap[field])) {
-                            value = excelSerialToDate(value);
+                            value = excelSerialToDate(value); // Convertir número serial de Excel a "dd-mm-yyyy"
                         }
                         rowData[fieldMap[field]] = value.toString().trim();
                     }
@@ -524,34 +543,46 @@ btnImport.addEventListener('click', async () => {
 
                 // Generar ID único
                 const id = await generateId();
-                const entryDate = rowData.fechaIngreso ? new Date(rowData.fechaIngreso.split('-').reverse().join('-')) : new Date();
 
-                // Convertir mesIngreso y mesSalida de texto a número
-                const mesIngreso = monthNameToNumber(rowData.mesIngreso);
-                const mesSalida = monthNameToNumber(rowData.mesSalida);
+                // Procesar fechaIngreso para mesIngreso y añoIngreso
+                let fechaIngresoDate;
+                if (rowData.fechaIngreso) {
+                    const [day, month, year] = rowData.fechaIngreso.split('-').map(Number);
+                    fechaIngresoDate = new Date(year, month - 1, day); // Meses en JS son 0-based
+                } else {
+                    fechaIngresoDate = new Date(); // Fecha actual si no hay fechaIngreso
+                    rowData.fechaIngreso = formatDate(fechaIngresoDate);
+                }
+
+                // Procesar fechaSalida para mesSalida y añoSalida
+                let fechaSalidaDate = null;
+                if (rowData.fechaSalida) {
+                    const [day, month, year] = rowData.fechaSalida.split('-').map(Number);
+                    fechaSalidaDate = new Date(year, month - 1, day);
+                }
 
                 // Preparar datos para Firestore
                 const dataToSave = {
-                    id: id, // Siempre generamos un nuevo ID
+                    id: id,
                     digitadoPor: rowData.digitadoPor || 'Importado',
                     factura: rowData.factura || '',
                     fechaEmision: rowData.fechaEmision || '',
-                    monto: parseInt(rowData.monto.replace(/\./g, '')) || 0,
+                    monto: parseInt(rowData.monto.toString().replace(/\./g, '')) || 0,
                     oc: rowData.oc || '',
                     fechaOc: rowData.fechaOc || '',
                     proveedor: rowData.proveedor || '',
-                    fechaIngreso: rowData.fechaIngreso || formatDate(entryDate),
-                    mesIngreso: mesIngreso || entryDate.getMonth() + 1,
-                    añoIngreso: parseInt(rowData.añoIngreso) || entryDate.getFullYear(),
+                    fechaIngreso: rowData.fechaIngreso || formatDate(fechaIngresoDate),
+                    mesIngreso: fechaIngresoDate.getMonth() + 1, // Mes de fechaIngreso (1-12)
+                    añoIngreso: fechaIngresoDate.getFullYear(),  // Año de fechaIngreso
                     acta: rowData.acta || '',
                     fechaSalida: rowData.fechaSalida || '',
                     numeroSalida: rowData.numeroSalida || '',
-                    mesSalida: mesSalida || '',
-                    añoSalida: parseInt(rowData.añoSalida) || '',
+                    mesSalida: fechaSalidaDate ? fechaSalidaDate.getMonth() + 1 : '', // Mes de fechaSalida (1-12)
+                    añoSalida: fechaSalidaDate ? fechaSalidaDate.getFullYear() : '', // Año de fechaSalida
                     usuario: rowData.usuario || 'Importado'
                 };
 
-                console.log('Datos a guardar:', dataToSave); // Depuración
+                console.log('Datos a guardar:', dataToSave);
                 await addDoc(detallesCollection, dataToSave);
             }
 
@@ -559,7 +590,7 @@ btnImport.addEventListener('click', async () => {
             successText.textContent = 'Registros importados exitosamente';
             messageSuccess.classList.remove('hidden');
             setTimeout(() => messageSuccess.classList.add('hidden'), 3000);
-            importFileInput.value = ''; // Limpiar input
+            importFileInput.value = '';
         };
 
         reader.onerror = () => {
