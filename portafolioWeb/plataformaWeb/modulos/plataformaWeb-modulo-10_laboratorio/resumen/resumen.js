@@ -27,7 +27,7 @@ let allData = [];
 
 // Llenar selector de año
 const currentYear = new Date().getFullYear();
-for (let year = currentYear - 5; year <= currentYear + 5; year++) {
+for (let year = currentYear - 1; year <= currentYear + 5; year++) {
     const option = document.createElement('option');
     option.value = year;
     option.textContent = year;
