@@ -388,7 +388,6 @@ function loadData() {
             docId: doc.id,
             ...doc.data()
         }));
-        console.log('Datos cargados desde Firestore:', allData); // Depuración
         renderTable();
     }, (error) => {
         console.error('Error al cargar datos:', error);
@@ -437,8 +436,6 @@ function renderTable() {
             return value && value.toString().toLowerCase().includes(filter.toLowerCase());
         });
     });
-
-    console.log('Datos filtrados:', filteredData); // Depuración
 
     const totalPages = Math.ceil(filteredData.length / rowsPerPage);
     const start = (currentPage - 1) * rowsPerPage;
@@ -582,7 +579,6 @@ btnImport.addEventListener('click', async () => {
                     usuario: rowData.usuario || 'Importado'
                 };
 
-                console.log('Datos a guardar:', dataToSave);
                 await addDoc(detallesCollection, dataToSave);
             }
 
