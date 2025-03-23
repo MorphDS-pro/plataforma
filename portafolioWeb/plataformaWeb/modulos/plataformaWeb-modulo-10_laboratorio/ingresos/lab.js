@@ -56,7 +56,7 @@ const btnImport = document.getElementById('btnImport');
 const btnDownloadFormat = document.getElementById('btnDownloadFormat');
 
 let currentPage = 1;
-const rowsPerPage = 10;
+const rowsPerPage = 50;
 let allData = [];
 let filters = Array(17).fill('');
 let deleteDocId = null;
