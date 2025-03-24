@@ -7,7 +7,8 @@ import {
   deleteDoc,
   doc,
   updateDoc,
-  serverTimestamp
+  serverTimestamp,
+  onSnapshot // Añadido para el listener en tiempo real
 } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
 // Configuración de Firebase para cargar listas (medicos, previsiones, providers)
@@ -38,7 +39,7 @@ const dbLists = getFirestore(appLists);
 const appPatients = initializeApp(firebaseConfigPatients, "patientsApp");
 const dbPatients = getFirestore(appPatients);
 
-// Referencias a los elementos del formulario y tabla
+// Referencias a los elementos del formulario y tabla (sin cambios)
 const registerInsurance = document.getElementById("registerInsurance");
 const insuranceOptions = document.getElementById("insuranceOptions");
 const registerDoctor = document.getElementById("registerDoctor");
@@ -48,7 +49,7 @@ const providerOptions = document.getElementById("providerOptions");
 const registerForm = document.getElementById("formRegisterContainer");
 const tableBody = document.getElementById("table-body");
 
-// Referencias al modal de edición
+// Referencias al modal de edición (sin cambios)
 const editModalOverlay = document.getElementById("editModalOverlay");
 const editModal = document.getElementById("editModal");
 const closeEditModal = document.getElementById("closeEditModal");
@@ -84,15 +85,9 @@ const allFilterToggle = document.getElementById("allFilterToggle");
 // Variables de paginación
 let currentPage = 1;
 const recordsPerPage = 100;
-
-// Variables para el filtro de mes y año
 let selectedMonth = new Date().getMonth();
 let selectedYear = new Date().getFullYear();
-
-// Objeto para almacenar filtros activos por columna
 let activeFilters = {};
-
-// Listas globales
 let previsionesList = [];
 let medicosList = [];
 let companiesList = [];
@@ -445,6 +440,18 @@ function renderTable() {
   btnNext.disabled = currentPage === totalPages || totalPages === 0;
 }
 
+// Nueva función: Listener en tiempo real para pacientes
+function setupPacientesListener() {
+  const pacientesRef = collection(dbPatients, "pacientes");
+  onSnapshot(pacientesRef, (snapshot) => {
+    snapshot.docChanges().forEach((change) => {
+      if (change.type === "modified" || change.type === "added" || change.type === "removed") {
+        loadPatients(); // Recargar pacientes cuando haya cambios
+      }
+    });
+  });
+}
+
 // Guardar paciente
 async function savePatient(event) {
   event.preventDefault();
@@ -642,7 +649,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   monthSelector.addEventListener("change", (e) => {
     selectedMonth = Number(e.target.value);
     if (!allFilterToggle.checked) filterPatientsByMonth();
-    else filterTable(0); // Reaplicar filtros si "todos" está activo
+    else filterTable(0);
   });
 
   yearSelector.addEventListener("change", (e) => {
@@ -652,7 +659,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   allFilterToggle.addEventListener("change", (e) => {
-    activeFilters = {}; // Resetear filtros de columna al cambiar modo
+    activeFilters = {};
     const filterInputs = document.querySelectorAll(".filter-input");
     filterInputs.forEach(input => input.value = "");
     if (e.target.checked) {
