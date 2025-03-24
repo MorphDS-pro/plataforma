@@ -133,13 +133,10 @@ function cargarFormulario(url) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Mostrar fecha al cargar
     mostrarFecha();
 
-    // Cargar página principal al cargar la ventana
     window.addEventListener("load", mostrarPaginaPrincipal);
 
-    // Links de formularios
     const links = document.querySelectorAll('.formulario-link');
     links.forEach(link => {
         link.addEventListener('click', function(e) {
@@ -153,7 +150,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Botón para cambiar de sociedad
     const changeRoleBtn = document.getElementById('change-role-btn');
     const changeRoleModal = document.getElementById('changeRoleModal');
     const changeRoleSelect = document.getElementById('changeRoleSelect');
@@ -182,7 +178,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const selectedRole = changeRoleSelect?.value;
             if (changeRoleModal) changeRoleModal.classList.add('hidden');
 
-            const basePath = './'; // Ruta relativa al dashboard actual
+            const basePath = './'; 
             const dashboardMap = {
                 "admin": 'dashboard-administrador.html',
                 "usuario": 'dashboard-personal.html',
@@ -206,7 +202,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Logout
     const logoutContainer = document.getElementById('logout-confirmation');
     const confirmLogout = document.getElementById('confirm-logout');
     const cancelLogout = document.getElementById('cancel-logout');
@@ -222,7 +217,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (confirmLogout) {
         confirmLogout.addEventListener('click', () => {
             console.log('Cerrando sesión...');
-            window.location.href = '../index.html'; // Ajuste para volver a la raíz
+            window.location.href = '../index.html';
         });
     }
 
@@ -232,7 +227,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // User icon menu
     const userIcon = document.getElementById('user-icon');
     const userContainer = document.getElementById('user-container');
     const optionsContainer = document.getElementById('options-container');
