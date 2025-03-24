@@ -13,7 +13,8 @@ import {
   where,
   updateDoc,
   writeBatch,
-  deleteDoc // Añadir esto
+  deleteDoc,
+  onSnapshot
 } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
 const firebaseConfigHistorial = {
@@ -60,10 +61,8 @@ let pageCursors = [];
 const doctorCache = {};
 let initialLoad = true;
 
-// Función para formatear fechas a "dd-mm-yyyy"
 function formatDate(dateString) {
-  if (!dateString) return ""; // Si no hay fecha, devuelve vacío
-  // Si la fecha incluye una marca de tiempo (ISO), tomamos solo la parte de la fecha
+  if (!dateString) return "";
   const datePart = dateString.split("T")[0];
   const [year, month, day] = datePart.split("-");
   return `${day}-${month}-${year}`;
@@ -87,28 +86,22 @@ const searchSurgeryDateFrom = document.getElementById("searchSurgeryDateFrom");
 const searchSurgeryDateTo = document.getElementById("searchSurgeryDateTo");
 const searchSurgeryDate = document.getElementById("searchSurgeryDate");
 
-// Función auxiliar para comparar IDs numéricamente
 function compareIds(idA, idB) {
-  const numA = parseInt(idA, 10); // Convertir a número eliminando ceros a la izquierda
+  const numA = parseInt(idA, 10);
   const numB = parseInt(idB, 10);
-  return numA - numB; // Orden numérico ascendente
+  return numA - numB;
 }
 
 async function loadPage(direction = "initial") {
   if (initialLoad) showSpinner();
 
   let q;
-
-  // Determinar el criterio de ordenamiento según los filtros
   if (searchSurgeryDateFrom.value || searchSurgeryDateTo.value) {
-    // Si hay filtros de desigualdad (>= o <=), ordenar primero por surgeryDate
     q = query(historialRef, orderBy("surgeryDate", "asc"), orderBy("incrementalId", "asc"));
   } else {
-    // Si no hay filtros de desigualdad, ordenar primero por incrementalId
     q = query(historialRef, orderBy("incrementalId", "asc"), orderBy("surgeryDate", "asc"));
   }
 
-  // Aplicar filtros de fecha si están presentes
   if (searchSurgeryDateFrom.value) {
     q = query(q, where("surgeryDate", ">=", searchSurgeryDateFrom.value));
   }
@@ -151,7 +144,6 @@ async function loadPage(direction = "initial") {
 
     await renderTable(docsArray);
 
-    // Calcular el total de documentos para la paginación
     let totalDocsQuery = query(historialRef);
     if (searchSurgeryDateFrom.value) {
       totalDocsQuery = query(totalDocsQuery, where("surgeryDate", ">=", searchSurgeryDateFrom.value));
@@ -183,7 +175,6 @@ async function renderTable(docsArray) {
   if (docsArray.length === 0) {
     tableBody.innerHTML = `<tr><td colspan="22">No se encontraron registros.</td></tr>`;
   } else {
-    // No necesitamos pre-cargar nombres de médicos si ya están en los datos
     for (const docSnap of docsArray) {
       const data = docSnap.data();
       const row = document.createElement("tr");
@@ -195,7 +186,7 @@ async function renderTable(docsArray) {
         <td>${data.incrementalId || docSnap.id}</td>
         <td>${data.admission || ""}</td>
         <td>${data.patient || ""}</td>
-        <td>${data.nombre || data.doctorId || "Sin nombre"}</td> <!-- Usar data.nombre directamente -->
+        <td>${data.nombre || data.doctorId || "Sin nombre"}</td>
         <td>${formatDate(data.surgeryDate)}</td>
         <td>${data.company || ""}</td>
         <td>${data.code || ""}</td>
@@ -230,11 +221,9 @@ async function renderTable(docsArray) {
 
 async function syncWithPlanilla() {
   showSpinner();
-
   try {
     const planillaSnapshot = await getDocs(collection(dbPlanilla, "implantes"));
     const planillaMap = new Map();
-
     planillaSnapshot.forEach((docSnap) => {
       const data = docSnap.data();
       const cadena = `${data.ID_PACIENTE || ""}${data.CODIGO_CLINICA || ""}`;
@@ -331,11 +320,11 @@ window.filterTable = async function(columnIndex) {
     filteredDocs = filteredDocs.filter(docSnap => {
       const data = docSnap.data();
       const values = [
-        "", // Acción (no filtrable)
+        "",
         data.incrementalId || docSnap.id,
         data.admission || "",
         data.patient || "",
-        data.nombre || data.doctorId || "Sin nombre", // Usar data.nombre
+        data.nombre || data.doctorId || "Sin nombre",
         formatDate(data.surgeryDate) || "",
         data.company || "",
         data.code || "",
@@ -406,7 +395,6 @@ window.editRecord = async function(id) {
   const patientValue = document.getElementById("editModalPacienteValue");
   const providerName = document.getElementById("editModalProviderName");
 
-  // Mostrar el modal
   modalOverlay.style.display = "block";
   editModal.style.display = "block";
 
@@ -415,8 +403,6 @@ window.editRecord = async function(id) {
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
       const data = docSnap.data();
-
-      // Rellenar los campos con los datos actuales
       admissionValue.textContent = data.admission || "Sin admisión";
       patientValue.textContent = data.patient || "Sin paciente";
       providerName.textContent = data.company || "Proveedor desconocido";
@@ -425,7 +411,6 @@ window.editRecord = async function(id) {
       quantityInput.value = data.quantity || "";
     }
 
-    // Manejar el guardado de cambios
     saveChangesButton.onclick = async () => {
       const updatedData = {
         admission: admissionInput.value.trim() || "",
@@ -457,7 +442,6 @@ window.editRecord = async function(id) {
     showMessage("error", "No se pudo cargar el registro.");
   }
 
-  // Cerrar el modal al hacer clic en la "X" o fuera del modal
   closeEditModal.onclick = () => {
     modalOverlay.style.display = "none";
     editModal.style.display = "none";
@@ -477,33 +461,25 @@ window.deleteRecord = async function(id) {
   const btnCancelDelete = document.getElementById("btnCancelDeleteNew");
   const closeConfirmation = document.getElementById("closeConfirmationDeleteNew");
 
-  // Mostrar el contenedor de confirmación
   confirmationContainer.classList.remove("hidden");
 
-  // Crear una promesa para manejar la confirmación
   const confirmDeletion = new Promise((resolve) => {
     btnConfirmDelete.onclick = () => resolve(true);
     btnCancelDelete.onclick = () => resolve(false);
     closeConfirmation.onclick = () => resolve(false);
   });
 
-  // Esperar la decisión del usuario
   const confirmed = await confirmDeletion;
-
-  // Ocultar el contenedor después de la decisión
   confirmationContainer.classList.add("hidden");
 
   if (confirmed) {
     try {
-      // Mostrar spinner de eliminación
       const overlayDelete = document.getElementById("overlayDelete");
       overlayDelete.classList.remove("hidden");
 
-      // Eliminar el documento de Firestore
       const docRef = doc(dbHistorial, "historial", id);
       await deleteDoc(docRef);
 
-      // Mostrar mensaje de éxito y recargar la página
       showMessage("success", "Registro eliminado correctamente.");
       await loadPage();
 
@@ -556,11 +532,7 @@ document.getElementById("btnAgregarDocumento").addEventListener("click", async (
 
   try {
     const docRef = doc(dbHistorial, "historial", currentEditId);
-
-    await updateDoc(docRef, {
-      documento: editModalDocumentoInput
-    });
-
+    await updateDoc(docRef, { documento: editModalDocumentoInput });
     showMessage("success", "Documento guardado correctamente.");
 
     const modalOverlay = document.getElementById("modalOverlayDocumento");
@@ -575,6 +547,17 @@ document.getElementById("btnAgregarDocumento").addEventListener("click", async (
     showMessage("error", "Ocurrió un error al guardar el documento.");
   }
 });
+
+function setupHistorialListener() {
+  const historialRef = collection(dbHistorial, "historial");
+  onSnapshot(historialRef, (snapshot) => {
+    snapshot.docChanges().forEach((change) => {
+      if (change.type === "modified" || change.type === "added" || change.type === "removed") {
+        loadPage();
+      }
+    });
+  });
+}
 
 document.addEventListener("DOMContentLoaded", function() {
   const modalOverlay = document.getElementById("modalOverlayDocumento");
@@ -602,34 +585,26 @@ document.addEventListener("DOMContentLoaded", function() {
       loadPage();
     });
   });
-});
 
-
-
-document.addEventListener("DOMContentLoaded", function() {
-  // Seleccionar todos los inputs de tipo date con la clase date-input
   const dateInputs = document.querySelectorAll(".date-input");
-
   dateInputs.forEach(input => {
-      input.addEventListener("click", function() {
-          // Intentar usar showPicker() (disponible en navegadores modernos)
-          if (typeof input.showPicker === "function") {
-              input.showPicker();
-          } else {
-              // Fallback para navegadores que no soportan showPicker()
-              input.focus(); // Poner foco en el input
-              input.click(); // Simular un clic adicional
-          }
-      });
-
-      // Opcional: Evitar que el teclado aparezca en dispositivos móviles
-      input.addEventListener("keydown", function(e) {
-          e.preventDefault(); // Prevenir entrada manual para forzar uso del calendario
-          if (typeof input.showPicker === "function") {
-              input.showPicker();
-          }
-      });
+    input.addEventListener("click", function() {
+      if (typeof input.showPicker === "function") {
+        input.showPicker();
+      } else {
+        input.focus();
+        input.click();
+      }
+    });
+    input.addEventListener("keydown", function(e) {
+      e.preventDefault();
+      if (typeof input.showPicker === "function") {
+        input.showPicker();
+      }
+    });
   });
+
+  setupHistorialListener();
 });
 
 loadPage();
