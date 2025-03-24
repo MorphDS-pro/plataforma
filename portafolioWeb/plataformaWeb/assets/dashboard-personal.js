@@ -17,16 +17,22 @@ function mostrarPaginaPrincipal() {
 }
 
 // Carga un formulario en un iframe
-function cargarFormulario(url) {
-    const mainContent = document.getElementById("main-content");
-    if (!mainContent) return console.error("No se encontró #main-content");
 
-    mainContent.innerHTML = "";
-    const iframe = document.createElement("iframe");
-    iframe.src = url;
-    iframe.style.cssText = "width: 99%; height: 800px; border: none;";
-    iframe.onerror = () => console.error("Error al cargar iframe:", url);
-    mainContent.appendChild(iframe);
+function cargarFormulario(url) {
+    const mainContent = document.getElementById('main-content');
+    if (mainContent) {
+        mainContent.innerHTML = '';
+
+        const iframe = document.createElement('iframe');
+        iframe.src = url;
+        iframe.width = "99%";
+        iframe.height = "800px";
+        iframe.frameBorder = "0";
+
+        mainContent.appendChild(iframe);
+    } else {
+        console.error("Elemento 'main-content' no encontrado.");
+    }
 }
 
 // Muestra la fecha actual
