@@ -30,7 +30,7 @@ body {
     box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
     z-index: 100;
     padding-top: 20px;
-    transition: width 0.3s ease; /* Transición suave para el ancho */
+    transition: width 0.3s ease; 
 }
 
 .main-content {
@@ -95,29 +95,27 @@ body {
         font-size: 14px;
     }
 
-    /* Sidebar-header (Página Principal) */
     .sidebar-header ul li a {
         padding: 10px;
         display: flex;
-        justify-content: center; /* Centrar el ícono */
+        justify-content: center;
         position: relative;
     }
 
     .sidebar-header ul li a::after {
-        content: none; /* Evitar contenido adicional */
+        content: none; 
     }
 
     .sidebar-header ul li a i:not(.fa-home) {
-        display: none; /* Ocultar íconos adicionales excepto fa-home */
+        display: none; 
     }
 
     .sidebar-header ul li a i.fa-home {
         font-size: 20px;
         margin: 0;
-        color: #333; /* Asegurar visibilidad */
+        color: #333;
     }
 
-    /* Ocultar texto en sidebar-header */
     .sidebar-header ul li a {
         text-indent: -9999px; /* Ocultar texto moviéndolo fuera de la pantalla */
         width: 40px; /* Ancho fijo para el ícono */
