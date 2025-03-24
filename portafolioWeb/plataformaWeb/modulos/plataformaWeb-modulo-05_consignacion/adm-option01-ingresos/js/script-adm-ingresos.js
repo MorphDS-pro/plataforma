@@ -6,6 +6,7 @@ import {
 import { getAuth } from 'https://www.gstatic.com/firebasejs/9.16.0/firebase-auth.js';
 import { loadMedicos } from './script02-modales.js';
 
+// Configuraciones de Firebase (sin cambios)
 export const firebaseConfigUsers = {
     apiKey: "AIzaSyDfz0_7v43TmV0rlFM9UhnVVHLFGtRWhGw",
     authDomain: "prestaciones-57dcd.firebaseapp.com",
@@ -36,6 +37,7 @@ export const firebaseConfigPatients = {
     measurementId: "G-3XGJW3EHLQ"
 };
 
+// Inicialización de Firebase (sin cambios)
 let appUsers;
 if (!getApps().some(app => app.name === 'usersApp')) {
   appUsers = initializeApp(firebaseConfigUsers, 'usersApp');
@@ -61,9 +63,9 @@ if (!getApps().some(app => app.name === 'patientsApp')) {
 }
 const dbPatients = getFirestore(appPatients);
 
-const dbCodes = getFirestore(appUsers); // Para acceder a 'codigos' en prestaciones-57dcd
+const dbCodes = getFirestore(appUsers);
 
-// Función para formatear fechas a "dd-mm-yyyy"
+// Funciones auxiliares (sin cambios)
 function formatDate(dateString) {
   if (!dateString) return "";
   const datePart = dateString.split("T")[0];
@@ -71,13 +73,11 @@ function formatDate(dateString) {
   return `${day}-${month}-${year}`;
 }
 
-// Función para formatear nombres propios
 function formatProperName(name) {
   if (!name) return "";
   return name.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 }
 
-// Función para buscar datos en la colección 'codigos' por 'codigo'
 async function searchCode(code) {
   try {
     const codesRef = collection(dbCodes, "codigos");
@@ -179,15 +179,13 @@ async function guardarIngreso(event) {
       document.getElementById('messageSuccess').classList.add('hidden');
     }, 6000);
 
-    // Limpiar campos, EXCLUYENDO el campo del médico
+    // Limpiar SOLO los campos especificados después de guardar
     document.getElementById('registerDescriptionInput').value = '';
     document.getElementById('registerQuantity').value = '';
     document.getElementById('registerCompany').value = '';
     document.getElementById('registerCode').value = '';
     document.getElementById('registerPrice').value = '';
-    document.getElementById('registerAttribute').value = 'Consignación';
-    document.getElementById('registerStatus').value = 'ingresado';
-    document.getElementById('registerType').value = 'reposicion';
+    document.getElementById('registerAttribute').value = 'Consignación'; // Restaurar valor por defecto
 
   } catch (error) {
     console.error("Error al guardar el ingreso:", error);
@@ -201,6 +199,7 @@ async function guardarIngreso(event) {
   }
 }
 
+// Event listeners para mensajes (sin cambios)
 document.getElementById('closeMessageSuccess').addEventListener('click', () => {
   document.getElementById('messageSuccess').classList.add('hidden');
 });
@@ -211,11 +210,12 @@ document.getElementById('closeMessageError').addEventListener('click', () => {
 const btnSave = document.getElementById('btnSave');
 btnSave.addEventListener('click', guardarIngreso);
 
+// Cargar datos en la tabla (sin cambios)
 const tableBody = document.getElementById('table-body');
 const ingresosCollection = collection(dbConsignaciones, 'ingresos');
 const q = query(ingresosCollection, orderBy('creationDate', 'asc'));
 onSnapshot(q, (snapshot) => {
-  tableBody.innerHTML = ''; 
+  tableBody.innerHTML = '';
   snapshot.forEach((doc) => {
     const ingreso = doc.data();
     const docId = doc.id;
@@ -277,24 +277,23 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // Ajustar el evento del botón "Limpiar"
   document.getElementById('btnReset').addEventListener('click', () => {
+    // Limpiar SOLO los campos especificados
     document.getElementById('registerAdmission').value = '';
     document.getElementById('registerPatient').value = '';
     const doctorInput = document.getElementById('registerDoctorInput');
     doctorInput.value = '';
     delete doctorInput.dataset.doctorId;
     document.getElementById('registerSurgeryDate').value = '';
-    document.getElementById('registerDescriptionInput').value = '';
-    document.getElementById('registerQuantity').value = '';
-    document.getElementById('registerCompany').value = '';
-    document.getElementById('registerCode').value = '';
-    document.getElementById('registerPrice').value = '';
+    // Los siguientes campos NO se limpian: registerUsuario, registerAttribute, registerStatus, registerType
   });
 
   document.getElementById("btnCancelDeleteNew").addEventListener("click", () => {
     document.getElementById("confirmationDeleteContainerNew").classList.add("hidden");
   });
 
+  // Resto del código del DOMContentLoaded (editar, cerrar modales, etc.) sin cambios
   tableBody.addEventListener("click", async (event) => {
     if (event.target.classList.contains("edit-icon")) {
       const docId = event.target.getAttribute("data-id");
@@ -305,6 +304,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (docSnap.exists()) {
           const data = docSnap.data();
           document.getElementById("editModalTitle").innerText = `Editar: ${data.code}`;
+          document.getElementById("editModalAdmissionValue").innerText = data.admission || "Sin admisión";
+          document.getElementById("editModalPacienteValue").innerText = data.patient || "Sin paciente";
+          document.getElementById("editModalProviderName").innerText = data.company || "Proveedor desconocido";
           document.getElementById("editModalAdmisionInput").value = data.admission || "";
           document.getElementById("editModalPacienteInput").value = data.patient || "";
           document.getElementById("editModalCantInput").value = data.quantity || "";
@@ -374,6 +376,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+// Funciones de traspaso (sin cambios)
 async function obtenerSiguienteIdHistorial() {
   const historialCollection = collection(dbConsignaciones, "historial");
   const snapshot = await getDocs(historialCollection);
@@ -444,15 +447,21 @@ async function traspasarIngresosAHistorial() {
       }
 
       const nuevoId = await obtenerSiguienteIdHistorial();
-      const cadenaHistorial = String(ingreso.admission) + String(ingreso.code);
-      await addDoc(collection(dbConsignaciones, "historial"), {
+      const cadenaHistorial = String(ingreso.admission || "") + String(ingreso.code || "");
+      const historialData = {
         ...ingreso,
         incrementalId: nuevoId,
         orden_de_compra: "",
         guia: "",
         factura: "",
-        cadena: cadenaHistorial
-      });
+        cadena: cadenaHistorial,
+        admission: ingreso.admission || "",
+        company: ingreso.company || "",
+        code: ingreso.code || "",
+        uniqueKey: `${ingreso.admission || ""}${ingreso.company || ""}${ingreso.code || ""}`, // Añadido aquí
+        status: "ingresado"
+      };
+      await addDoc(collection(dbConsignaciones, "historial"), historialData);
       successfulHistorialTransfers++;
 
       const codeData = await searchCode(ingreso.code);
@@ -467,7 +476,7 @@ async function traspasarIngresosAHistorial() {
         sale = (totalItem + (totalItem * marginNum)).toFixed(2);
       }
 
-      const cadenaConsumo = `${ingreso.admission}${ingreso.company}`;
+      const cadenaConsumo = `${ingreso.admission || ""}${ingreso.company || ""}`;
       const consumoData = {
         entryDate: serverTimestamp(),
         id: ingreso.admission || "",
@@ -500,7 +509,9 @@ async function traspasarIngresosAHistorial() {
         chain: cadenaConsumo,
         margin: margin,
         creationDate: serverTimestamp(),
-        user: ingreso.usuario || "Usuario desconocido"
+        user: ingreso.usuario || "Usuario desconocido",
+        uniqueKey: `${ingreso.admission || ""}${ingreso.company || ""}${ingreso.code || ""}`, // Añadido aquí
+        status: "ingresado"
       };
       consumosToAdd.push(consumoData);
     }
@@ -527,6 +538,8 @@ async function traspasarIngresosAHistorial() {
         attribute: "Consignación",
         totalQuote: totalQuote.toString(),
         report: "Consig.",
+        status: "Pendiente",
+        entryDate: serverTimestamp(),
         creationDate: serverTimestamp(),
         user: ingreso.usuario || "Usuario desconocido"
       };
