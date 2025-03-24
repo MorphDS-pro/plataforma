@@ -1,7 +1,18 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
 import { 
-  getFirestore, collection, getDocs, query, where, addDoc, serverTimestamp, updateDoc, doc, onSnapshot, deleteDoc 
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  getFirestore, 
+  collection, 
+  onSnapshot, 
+  query, 
+  where, 
+  getDocs, 
+  updateDoc, 
+  doc,
+  addDoc,
+  deleteDoc,
+  serverTimestamp,
+  writeBatch
+} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
 // Configuración de Firebase para pacientes
 const firebaseConfigPatients = {
@@ -25,11 +36,28 @@ const firebaseConfigCodes = {
   measurementId: "G-0CZ9BMJWMV"
 };
 
+// Configuración de Firebase para consignaciones (usada para historial)
+const firebaseConfigConsignaciones = {
+  apiKey: "AIzaSyDlOW1-vrW4uiXrveFPoBcJ1ImZlPqzzlA",
+  authDomain: "consignaciones-ee423.firebaseapp.com",
+  projectId: "consignaciones-ee423",
+  storageBucket: "consignaciones-ee423.firebasestorage.app",
+  messagingSenderId: "992838229253",
+  appId: "1:992838229253:web:38462a4886e4ede6a7ab6c",
+  measurementId: "G-K58BRH151H"
+};
+
 // Inicializar Firebase
 const appPatients = initializeApp(firebaseConfigPatients, "patientsApp");
 const dbPatients = getFirestore(appPatients);
 const appCodes = initializeApp(firebaseConfigCodes, "codesApp");
 const dbCodes = getFirestore(appCodes);
+const appConsignaciones = initializeApp(firebaseConfigConsignaciones, "consignacionesApp");
+const dbConsignaciones = getFirestore(appConsignaciones);
+
+// Usar la misma configuración para historial
+const appHistorial = initializeApp(firebaseConfigConsignaciones, "historialApp"); // Corregido: usar firebaseConfigConsignaciones
+const dbHistorial = getFirestore(appHistorial);
 
 // Elementos del DOM
 const registerAdmission = document.getElementById("registerAdmission");
@@ -98,6 +126,114 @@ const CHECK_OPTIONS = ["pendiente", "ingresado", "pendiente código"];
 // Cachés para optimización
 const admissionCache = new Map();
 const referenceCache = new Map();
+
+
+
+// Listener en tiempo real para consumos
+function setupConsumosListener() {
+  const consumosRef = collection(dbPatients, "consumos"); // Cambiado a dbPatients
+  onSnapshot(consumosRef, async (snapshot) => {
+    const changedDocs = snapshot.docChanges().filter(change => change.type === "modified");
+
+    for (const change of changedDocs) {
+      const data = change.doc.data();
+      const admission = data.admission || "";
+      const provider = data.provider || "";
+      const newStatus = data.status || "";
+
+      if (newStatus === "cargado") { // Ajustado a minúsculas para coincidir con STATUS_OPTIONS
+        const q = query(
+          consumosRef,
+          where("admission", "==", admission),
+          where("provider", "==", provider)
+        );
+        const querySnapshot = await getDocs(q);
+        const allLoaded = querySnapshot.docs.every(doc => doc.data().status === "cargado");
+
+        if (allLoaded) {
+          await updateHistorialRecords(admission, provider);
+        }
+      }
+    }
+  });
+}
+
+async function updateHistorialRecords(admission, provider) {
+  try {
+    const historialRef = collection(dbHistorial, "historial");
+    const q = query(
+      historialRef,
+      where("admission", "==", admission),
+      where("company", "==", provider) // company en historial equivale a provider en consumos
+    );
+    const querySnapshot = await getDocs(q);
+
+    for (const docSnap of querySnapshot.docs) {
+      const docRef = doc(dbHistorial, "historial", docSnap.id);
+      await updateDoc(docRef, { status: "Cargado" }); // Ajustado a capitalización consistente con historial
+    }
+  } catch (error) {
+    console.error("Error al actualizar historial:", error);
+  }
+}
+
+// Actualizar registros relacionados en ingresos y pacientes
+async function updateRelatedRecords(admission, provider) {
+  const chain = `${admission}${provider}`;
+
+  // Obtener todos los consumos con esta combinación admission + provider
+  const consumosQuery = query(
+    collection(dbPatients, "consumos"),
+    where("chain", "==", chain)
+  );
+  const consumosSnapshot = await getDocs(consumosQuery);
+  const consumos = consumosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+  // Determinar el estado general
+  const allCargado = consumos.every(consumo => consumo.status === "cargado"); // Ajusté a "cargado" minúsculas para coincidir con tu lista STATUS_OPTIONS
+  const someCargado = consumos.some(consumo => consumo.status === "cargado");
+  const newStatus = allCargado ? "cargado" : (someCargado ? "pendiente de carga" : "ingresado");
+
+  // Actualizar ingresos
+  const ingresosQuery = query(
+    collection(dbConsignaciones, "ingresos"),
+    where("admission", "==", admission),
+    where("company", "==", provider)
+  );
+  const ingresosSnapshot = await getDocs(ingresosQuery);
+  ingresosSnapshot.forEach(async (ingresoDoc) => {
+    const ingresoRef = doc(dbConsignaciones, "ingresos", ingresoDoc.id);
+    await updateDoc(ingresoRef, { status: newStatus });
+  });
+
+  // Actualizar pacientes
+  const pacientesQuery = query(
+    collection(dbPatients, "pacientes"),
+    where("admission", "==", admission),
+    where("provider", "==", provider)
+  );
+  const pacientesSnapshot = await getDocs(pacientesQuery);
+  pacientesSnapshot.forEach(async (pacienteDoc) => {
+    const pacienteRef = doc(dbPatients, "pacientes", pacienteDoc.id);
+    const updateData = {
+      status: allCargado ? "Cargado" : "Pendiente de Carga", // Capitalizado para pacientes
+    };
+    if (allCargado) {
+      updateData.chargeDate = new Date().toISOString().split("T")[0];
+    }
+    await updateDoc(pacienteRef, updateData);
+  });
+}
+
+
+
+
+
+
+
+
+
+
 
 // Función de debounce
 function debounce(func, wait) {
@@ -270,7 +406,6 @@ async function updateInsuranceFromPatients(consumo) {
         const consumoRef = doc(dbPatients, "consumos", consumo.docId);
         await updateDoc(consumoRef, { insurance: newInsurance });
         consumo.insurance = newInsurance;
-        console.log(`Previsión actualizada para consumo ${consumo.docId}: ${newInsurance}`);
       }
       return newInsurance;
     } else {
@@ -498,7 +633,7 @@ function createRow(consumo) {
     <td>${formatPrice(consumo.totalGroup)}</td>
     <td>${matchIcon}</td>
     <td class="charge-date">${formatDate(consumo.chargeDate)}</td>
-    <td>${statusSelect}</td>
+    <td class="status-${consumo.status.replace(' ', '-')}">${statusSelect}</td>
     <td>${consumo.admission} <i class="fas fa-copy copy-icon" style="cursor:pointer; margin-left:5px;" title="Copiar"></i></td>
     <td>${consumo.code} <i class="fas fa-copy copy-icon" style="cursor:pointer; margin-left:5px;" title="Copiar"></i></td>
     <td>${consumo.quantity}</td>
@@ -540,12 +675,15 @@ function addRowEvents(row, consumo) {
   });
 
   const statusSelect = row.querySelector(".status-select");
+  const statusCell = row.cells[12]; // Columna "Estado"
+  const chargeDateCell = row.cells[11]; // Columna "Fecha de Cargo"
+
   if (statusSelect) {
     statusSelect.addEventListener("change", async e => {
+      e.preventDefault(); // Evitar eventos duplicados
       const newStatus = e.target.value;
       const docId = e.target.dataset.docid;
       const consumoRef = doc(dbPatients, "consumos", docId);
-      const chargeDateCell = row.cells[11];
       const consumo = consumosList.find(c => c.docId === docId);
       const currentTotalQuote = consumo ? consumo.totalQuote : await getTotalCotizacionFromPacientes(consumo.chain);
 
@@ -561,13 +699,23 @@ function addRowEvents(row, consumo) {
         updateData.chargeDate = "";
         chargeDateCell.textContent = "";
       }
-      await updateDoc(consumoRef, updateData);
-      if (consumo) {
-        consumo.status = newStatus;
-        consumo.chargeDate = updateData.chargeDate;
-        consumo.totalQuote = currentTotalQuote;
+
+      try {
+        await updateDoc(consumoRef, updateData);
+        if (consumo) {
+          consumo.status = newStatus;
+          consumo.chargeDate = updateData.chargeDate;
+          consumo.totalQuote = currentTotalQuote;
+        }
+        statusCell.className = `status-${newStatus.replace(' ', '-')}`;
+        showMessage("success", `Estado actualizado a "${newStatus}" correctamente.`);
+
+        // Llamar a sincronizarEstados solo una vez
+        await sincronizarEstados(consumo.admission, consumo.provider, docId, newStatus);
+      } catch (error) {
+        console.error("Error al actualizar estado:", error);
+        showMessage("error", `Error al actualizar estado: ${error.message}`);
       }
-      filterConsumosByMonth();
     });
   }
 
@@ -582,6 +730,95 @@ function addRowEvents(row, consumo) {
       if (consumo) consumo.check = newCheck;
     });
   }
+}
+
+// Nueva función para sincronizar estados en consumos, historial y pacientes
+async function sincronizarEstados(admission, provider, changedDocId, newStatus) {
+  const today = new Date().toISOString().split("T")[0]; // Fecha actual
+
+  // 1. Obtener todos los registros en consumos con la misma admission+provider
+  const consumosQuery = query(
+    collection(dbPatients, "consumos"),
+    where("admission", "==", admission),
+    where("provider", "==", provider)
+  );
+  const consumosSnapshot = await getDocs(consumosQuery);
+  const consumos = consumosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+  // Actualizar el estado del registro modificado en la lista local
+  const changedConsumo = consumos.find(c => c.id === changedDocId);
+  if (changedConsumo) {
+    changedConsumo.status = newStatus; // Asegurar que el estado local se actualice
+  }
+
+  // Determinar si todos están en "cargado"
+  const totalRegistros = consumos.length;
+  const cargados = consumos.filter(c => c.status === "cargado");
+  const todosCargados = cargados.length === totalRegistros;
+
+  console.log(`Total registros: ${totalRegistros}, Cargados: ${cargados.length}, Todos cargados: ${todosCargados}`);
+  console.log("Estados en consumos:", consumos.map(c => `${c.uniqueKey}: ${c.status}`));
+
+  // 2. Actualizar TODAS las filas en historial relacionadas con admission+provider
+  const historialQuery = query(
+    collection(dbConsignaciones, "historial"),
+    where("admission", "==", admission),
+    where("company", "==", provider)
+  );
+  const historialSnapshot = await getDocs(historialQuery);
+  const historialDocs = historialSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+  for (const consumo of consumos) {
+    const matchingHistorial = historialDocs.find(h => h.uniqueKey === consumo.uniqueKey);
+    if (matchingHistorial) {
+      const historialRef = doc(dbConsignaciones, "historial", matchingHistorial.id);
+      const historialStatus = consumo.status === "cargado" ? "cargado" : "pendiente de carga";
+      try {
+        await updateDoc(historialRef, { status: historialStatus });
+        console.log(`Historial actualizado: ${matchingHistorial.uniqueKey} -> ${historialStatus}`);
+      } catch (error) {
+        console.error(`Error al actualizar historial ${matchingHistorial.uniqueKey}:`, error);
+      }
+    } else {
+      console.warn(`No se encontró registro en historial con uniqueKey=${consumo.uniqueKey}`);
+    }
+  }
+
+  // 3. Actualizar pacientes basado en admission+provider
+  const pacientesQuery = query(
+    collection(dbPatients, "pacientes"),
+    where("admission", "==", admission),
+    where("provider", "==", provider)
+  );
+  const pacientesSnapshot = await getDocs(pacientesQuery);
+
+  if (!pacientesSnapshot.empty) {
+    const pacienteDoc = pacientesSnapshot.docs[0];
+    const pacienteRef = doc(dbPatients, "pacientes", pacienteDoc.id);
+    const currentStatus = pacienteDoc.data().status;
+    const updateData = {};
+
+    if (todosCargados) {
+      updateData.status = "cargado";
+      updateData.chargeDate = today;
+    } else {
+      updateData.status = "pendiente de carga";
+      updateData.chargeDate = "";
+    }
+
+    try {
+      await updateDoc(pacienteRef, updateData);
+      console.log(`Paciente actualizado: admission=${admission}, provider=${provider}`);
+    } catch (error) {
+      console.error(`Error al actualizar paciente:`, error);
+    }
+  } else {
+    console.warn(`No se encontró paciente con admission=${admission} y provider=${provider}`);
+  }
+
+  // Refrescar la tabla
+  console.log("Refrescando tabla...");
+  filterConsumosByMonth();
 }
 
 // Renderizar la tabla
@@ -624,6 +861,7 @@ async function saveConsumo(event) {
   const margen = calculateMargin(precio);
   const totalItem = cantidad * precio;
   const cadena = `${registerAdmission.value}${registerProvider.value}`;
+  const uniqueKey = `${registerAdmission.value}${registerProvider.value}${registerCode.value}`; // Nueva concatenación
   const totalCotizacion = await getTotalCotizacionFromPacientes(cadena);
   const agrupacion = registerGrouping.value.toLowerCase();
 
@@ -665,6 +903,7 @@ async function saveConsumo(event) {
     grouping: registerGrouping.value,
     totalItem: totalItem.toFixed(2),
     chain: cadena,
+    uniqueKey: uniqueKey, // Nuevo campo
     margin: margen,
     creationDate: serverTimestamp(),
     user: registerUsuario.textContent
@@ -1002,4 +1241,5 @@ document.addEventListener("DOMContentLoaded", () => {
   populateYearSelector();
   loadConsumos();
   setupFilterEvents();
+  setupConsumosListener(); // Añadido aquí
 });
