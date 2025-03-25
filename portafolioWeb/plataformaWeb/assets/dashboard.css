@@ -46,6 +46,35 @@ body {
     transition: margin-left 0.3s ease; 
 }
 
+
+@media (max-width: 1200px) {
+    .sidebar {
+        width: 90px; 
+        top: 87px;
+    }
+
+    .main-content {
+        margin-left: 60px; 
+        height: 1000px;
+    }
+
+    .header {
+        padding: 10px;
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
 @media screen and (max-width: 768px) {
     .sidebar {
         width: 90px; 
